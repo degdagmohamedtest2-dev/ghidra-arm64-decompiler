@@ -52,6 +52,15 @@ jobs:
           architecture: aarch64
           cache: gradle
 
+      - name: Fetch Ghidra build dependencies
+        working-directory: ghidra-src
+        env:
+          LC_MESSAGES: en_US.UTF-8
+        run: |
+          chmod +x gradlew
+          ./gradlew -I gradle/support/fetchDependencies.gradle \
+            -DhideDownloadProgress -DnoEclipse --no-daemon
+
       - name: Build ARM64 native components
         working-directory: ghidra-src
         env:
