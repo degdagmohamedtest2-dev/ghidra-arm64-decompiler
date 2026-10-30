@@ -19,7 +19,7 @@ Ghidra/Features/Decompiler/os/linux_arm_64/
 3. Optionally provide a Ghidra tag, branch, or commit through `ghidra_ref`.
 4. Download the workflow artifact and copy its `Ghidra/Features/Decompiler/os/linux_arm_64` directory into the matching Ghidra installation.
 
-The default ref is `Ghidra_12.2_PUBLIC`, matching the archive currently available locally. For REA 6.8.0 compatibility, dispatch the workflow with a supported Ghidra 12.1.x ref instead, then use the resulting binary with that same Ghidra release.
+The default ref is `Ghidra_12.2_build`, the upstream source tag for the `ghidra_12.2_PUBLIC_20261016.zip` release currently available locally. For REA 6.8.0 compatibility, dispatch the workflow with a supported Ghidra 12.1.x ref instead, then use the resulting binary with that same Ghidra release.
 
 ## Local build
 

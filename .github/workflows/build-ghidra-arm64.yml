@@ -8,13 +8,13 @@ on:
       ghidra_ref:
         description: Ghidra branch, tag, or commit to build
         required: false
-        default: Ghidra_12.2_PUBLIC
+        default: Ghidra_12.2_build
 
 permissions:
   contents: read
 
 env:
-  DEFAULT_GHIDRA_REF: Ghidra_12.2_PUBLIC
+  DEFAULT_GHIDRA_REF: Ghidra_12.2_build
 
 jobs:
   build:
