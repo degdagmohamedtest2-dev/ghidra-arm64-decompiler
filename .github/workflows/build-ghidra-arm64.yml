@@ -1,0 +1,91 @@
+name: Build Ghidra Linux ARM64 natives
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      ghidra_ref:
+        description: Ghidra branch, tag, or commit to build
+        required: false
+        default: Ghidra_12.2_PUBLIC
+
+permissions:
+  contents: read
+
+env:
+  DEFAULT_GHIDRA_REF: Ghidra_12.2_PUBLIC
+
+jobs:
+  build:
+    # GitHub-hosted ARM64 runner. This avoids cross-toolchain ambiguity and
+    # produces a binary whose host ABI matches Linux ARM64 Ghidra installs.
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Check out this repository
+        uses: actions/checkout@v4
+
+      - name: Resolve Ghidra ref
+        id: ref
+        shell: bash
+        run: |
+          ref="${{ inputs.ghidra_ref }}"
+          if [[ -z "$ref" ]]; then
+            ref="$DEFAULT_GHIDRA_REF"
+          fi
+          echo "value=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Check out Ghidra source
+        uses: actions/checkout@v4
+        with:
+          repository: NationalSecurityAgency/ghidra
+          ref: ${{ steps.ref.outputs.value }}
+          path: ghidra-src
+          fetch-depth: 1
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          architecture: aarch64
+          cache: gradle
+
+      - name: Build ARM64 native components
+        working-directory: ghidra-src
+        env:
+          LC_MESSAGES: en_US.UTF-8
+        run: |
+          chmod +x gradlew
+          ./gradlew buildNatives_linux_arm_64 --no-daemon --stacktrace
+
+      - name: Stage native components
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_dir="ghidra-src/Ghidra/Features/Decompiler"
+          out_dir="dist/Ghidra/Features/Decompiler/os/linux_arm_64"
+          mkdir -p "$out_dir"
+
+          for name in decompile sleigh; do
+            source="$source_dir/build/os/linux_arm_64/$name"
+            if [[ ! -x "$source" ]]; then
+              echo "Missing executable: $source" >&2
+              find "$source_dir" -path "*/linux_arm_64/$name" -type f -print >&2 || true
+              exit 1
+            fi
+            install -m 0755 "$source" "$out_dir/$name"
+          done
+
+          printf 'Ghidra ref: %s\n' '${{ steps.ref.outputs.value }}' > dist/BUILD-INFO.txt
+          printf 'Runner: %s\n' '${{ runner.arch }}' >> dist/BUILD-INFO.txt
+          sha256sum "$out_dir"/* > dist/SHA256SUMS
+
+      - name: Upload ARM64 native components
+        uses: actions/upload-artifact@v4
+        with:
+          name: ghidra-linux-arm64-natives-${{ steps.ref.outputs.value }}
+          path: dist
+          if-no-files-found: error
+          retention-days: 30
